@@ -1,0 +1,6 @@
+txyam.egg-info
+_trial_temp
+apidoc
+*.pyc
+build
+dist
