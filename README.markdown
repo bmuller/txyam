@@ -29,5 +29,11 @@ This project is specifically designed for asynchronous [Python Twisted](http://t
     client.addPickled('anotherkey', { 'dkey': [1, 2, 3] }, compress=True)
     client.getPickled('anotherkey', uncompress=True)
 
+    # get stats for all servers
+    def printStats(stats):
+        for host, statlist in stats.items():
+	    print host, statslist['bytes']
+    client.stats().addCallback(printStats)
+
 ## Errors / Bugs / Contact
 See [github](http://github.com/bmuller/txyam).
