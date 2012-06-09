@@ -4,7 +4,7 @@ from twisted.internet.defer import inlineCallbacks, DeferredList
 from twisted.internet import reactor
 from twisted.python import log
 
-from txyam.utils import ketama
+from txyam.utils import ketama, deferredDict
 from txyam.factory import MemCacheClientFactory
 
 
@@ -80,23 +80,23 @@ class YamClient:
 
 
     def stats(self, arg=None):
-        ds = []
+        ds = {}
         for factory in self.factories:
             if not factory.client is None:
-                d = factory.client.stats(arg).addCallback(lambda result: (factory.addr, result))
-                ds.append(d)
+                hp = "%s:%i" % (factory.addr.host, factory.addr.port)
+                ds[hp] = factory.client.stats(arg)
         log.msg("Getting stats on %i hosts" % len(ds))
-        return DeferredList(ds)
+        return deferredDict(ds)
 
 
     def version(self):
-        ds = []
+        ds = {}
         for factory in self.factories:
             if not factory.client is None:
-                d = factory.client.version().addCallback(lambda result: (factory.addr, result))
-                ds.append(d)
+                hp = "%s:%i" % (factory.addr.host, factory.addr.port)
+                ds[hp] = factory.client.version()
         log.msg("Getting version on %i hosts" % len(ds))
-        return DeferredList(ds)
+        return deferredDict(ds)
 
 
     def pickle(self, value, compress):
