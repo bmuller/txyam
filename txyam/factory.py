@@ -1,15 +1,22 @@
+from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.python import log
 from twisted.protocols.memcache import MemCacheProtocol
 
+class ConnectingMemCacheProtocol(MemCacheProtocol):
+    def connectionMade(self):
+        self.factory.connectionMade()
+
+
 class MemCacheClientFactory(ReconnectingClientFactory):
     initialDelay = 0.1
-    protocol = MemCacheProtocol
+    protocol = ConnectingMemCacheProtocol
     noisy = True
 
     def __init__(self):
         self.client = None
         self.addr = None
+        self.deferred = Deferred()
 
 
     def buildProtocol(self, addr):
@@ -30,3 +37,7 @@ class MemCacheClientFactory(ReconnectingClientFactory):
         log.msg("Connection failed to %s - %s" % (self.addr, reason))
         self.client = None
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
+
+
+    def connectionMade(self):
+        self.deferred.callback(self)

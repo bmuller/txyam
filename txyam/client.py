@@ -1,6 +1,6 @@
 import cPickle, zlib
 
-from twisted.internet.defer import inlineCallbacks, DeferredList
+from twisted.internet.defer import inlineCallbacks, DeferredList, returnValue
 from twisted.internet import reactor
 from twisted.python import log
 
@@ -29,12 +29,26 @@ def wrap(cmd):
     return wrapper
 
 
-class YamClient:
+def ConnectedYamClient(hosts):
+    client = BaseYamClient(hosts)
+    return client.connect()
+
+
+def LazyYamClient(hosts):
+    client = BaseYamClient(hosts)
+    client.connect()
+    return client
+
+
+YamClient = LazyYamClient
+
+
+class BaseYamClient:
     def __init__(self, hosts):
         """
         @param hosts: A C{list} of C{tuple}s containing hosts and ports.
         """
-        self.connect(hosts)
+        self.hosts = hosts
 
 
     def getActiveConnections(self):
@@ -50,9 +64,9 @@ class YamClient:
     
 
     @inlineCallbacks
-    def connect(self, hosts):
+    def connect(self):
         self.factories = []
-        for hp in hosts:
+        for hp in self.hosts:
             if isinstance(hp, tuple):
                 host, port = hp
             elif isinstance(hp, str):
@@ -64,6 +78,9 @@ class YamClient:
             connection = yield reactor.connectTCP(host, port, factory)
             self.factories.append(factory)
 
+        # fire callback when all connections have been established
+        yield DeferredList([factory.deferred for factory in self.factories])
+        returnValue(self)
 
     def disconnect(self):
         log.msg("Disconnecting from all clients.")
