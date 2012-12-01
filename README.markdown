@@ -1,4 +1,6 @@
 # txyam: Yet Another Memcached (YAM) client for Twisted
+[![Build Status](https://secure.travis-ci.org/bmuller/txyam.png?branch=master)](https://travis-ci.org/bmuller/txyam)
+
 This project is specifically designed for asynchronous [Python Twisted](http://twistedmatrix.com) code to interact with multiple [memcached](http://memcached.org) servers.  A number of other libraries exist, but none of them supported all of the following:
 
  1. A reconnecting client: if a connection is closed the client should keep trying to reconnect

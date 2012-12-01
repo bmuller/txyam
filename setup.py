@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-try:
-    from setuptools import setup, Extension
-except ImportError:
-    from distutils.core import setup, Extension
+from setuptools import setup, find_packages
 
 setup(
     name="txyam",
@@ -12,6 +9,7 @@ setup(
     author_email="bamuller@gmail.com",
     license="MIT",
     url="http://github.com/bmuller/txyam",
-    packages=["txyam", "txyam.tests"],
-    requires=["twisted.protocols.memcache"]
+    packages=find_packages(),
+    requires=["twisted.protocols.memcache"],
+    install_requires=['twisted>=12.0']
 )
