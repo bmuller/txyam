@@ -29,26 +29,13 @@ def wrap(cmd):
     return wrapper
 
 
-def ConnectedYamClient(hosts):
-    client = BaseYamClient(hosts)
-    return client.connect()
-
-
-def LazyYamClient(hosts):
-    client = BaseYamClient(hosts)
-    client.connect()
-    return client
-
-
-YamClient = LazyYamClient
-
-
-class BaseYamClient:
+class YamClient:
     def __init__(self, hosts):
         """
         @param hosts: A C{list} of C{tuple}s containing hosts and ports.
         """
         self.hosts = hosts
+        self.connect()
 
 
     def getActiveConnections(self):
@@ -81,6 +68,7 @@ class BaseYamClient:
         # fire callback when all connections have been established
         yield DeferredList([factory.deferred for factory in self.factories])
         returnValue(self)
+
 
     def disconnect(self):
         log.msg("Disconnecting from all clients.")
@@ -164,3 +152,7 @@ class BaseYamClient:
     prepend = wrap("prepend")
     getMultiple = wrap("getMultiple")
     delete = wrap("delete")
+
+
+def ConnectedYamClient(hosts):
+    return YamClient(hosts).connect()
