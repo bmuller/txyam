@@ -35,7 +35,6 @@ class YamClient:
         @param hosts: A C{list} of C{tuple}s containing hosts and ports.
         """
         self.hosts = hosts
-        self.connect()
 
 
     def getActiveConnections(self):
