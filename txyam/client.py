@@ -30,12 +30,13 @@ def wrap(cmd):
 
 
 class YamClient:
-    def __init__(self, hosts):
+    def __init__(self, hosts, connect=True):
         """
         @param hosts: A C{list} of C{tuple}s containing hosts and ports.
         """
         self.hosts = hosts
-        self.connect()
+        if connect:
+            self.connect()
 
 
     def getActiveConnections(self):
@@ -155,4 +156,4 @@ class YamClient:
 
 
 def ConnectedYamClient(hosts):
-    return YamClient(hosts).connect()
+    return YamClient(hosts, connect=False).connect()
