@@ -39,7 +39,7 @@ class MemCacheClientFactory(ReconnectingClientFactory):
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 
-   def connectionMade(self):
+    def connectionMade(self):
         if self.deferred is not None:
             self.deferred.callback(self)
             self.deferred = None
