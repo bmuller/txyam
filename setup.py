@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="txyam",
-    version="0.2",
+    version="0.3",
     description="Yet Another Memcached (YAM) client for Twisted.",
     author="Brian Muller",
     author_email="bamuller@gmail.com",
