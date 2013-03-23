@@ -10,9 +10,7 @@ This project is specifically designed for asynchronous [Python Twisted](http://t
 
 ## Installation
 
-    git clone https://github.com/bmuller/txyam
-    cd txyam
-    sudo python setup.py install
+    pip install txyam
 
 ## Usage
 
@@ -36,6 +34,20 @@ This project is specifically designed for asynchronous [Python Twisted](http://t
         for host, statlist in stats.items():
 	    print host, statlist['bytes']
     client.stats().addCallback(printStats)
+
+## Memoizing
+You can use txyam to memoize functions/methods.
+
+    # assuming "client" is already defined and is a YamClient
+    @memoize(client)
+    def mayTakeAWhile(arg, argtwo):
+    	return takesForever(arg, argtwo)
+
+    mayTakeAWhile('blah', 'blah two')
+
+After the first time 'mayTakeAWhile' is called, the results are stored in memcache.  All future
+calls just pull the results from memcache.  The function will be memoized based on the function
+name and arguments.  The function being memoized can return an object, which will be picked before saving.
 
 ## Errors / Bugs / Contact
 See [github](http://github.com/bmuller/txyam).
