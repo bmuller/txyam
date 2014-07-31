@@ -2,6 +2,7 @@ import hashlib
 
 from twisted.internet import defer
 
+
 def signedInt(n):
     n = n & 0xffffffff
     return ((1 << 31) & n) and (~n + 1) or n
@@ -17,7 +18,7 @@ def ketama(key):
     """
     d = hashlib.md5(key).digest()
     c = signedInt
-    h = c((ord(d[3])&0xff) << 24) | c((ord(d[2]) & 0xff) << 16) | c((ord(d[1]) & 0xff) << 8) | c(ord(d[0]) & 0xff)
+    h = c((ord(d[3]) & 0xff) << 24) | c((ord(d[2]) & 0xff) << 16) | c((ord(d[1]) & 0xff) << 8) | c(ord(d[0]) & 0xff)
     return h
 
 

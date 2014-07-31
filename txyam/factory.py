@@ -3,6 +3,7 @@ from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.python import log
 from twisted.protocols.memcache import MemCacheProtocol
 
+
 class ConnectingMemCacheProtocol(MemCacheProtocol):
     def connectionMade(self):
         self.factory.connectionMade()

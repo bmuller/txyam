@@ -3,6 +3,7 @@ from twisted.internet.defer import inlineCallbacks
 
 from utils import YamClientWrapper
 
+
 class FactoryTest(unittest.TestCase):
 
     @inlineCallbacks
@@ -16,7 +17,7 @@ class FactoryTest(unittest.TestCase):
         yield self.client.set("testkey", '123')
         result = yield self.client.get("testkey")
         self.assertEqual(result[1], '123')
-        
+
 
     def tearDown(self):
         return self.client.disconnect()

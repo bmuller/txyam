@@ -1,4 +1,5 @@
-import cPickle, zlib
+import cPickle
+import zlib
 
 from twisted.internet.defer import inlineCallbacks, DeferredList, returnValue
 from twisted.internet import reactor
@@ -12,6 +13,7 @@ class NoServerError(Exception):
     """
     No available connected servers to accept command.
     """
+
 
 class InvalidHostPortError(Exception):
     """
@@ -40,16 +42,17 @@ class YamClient:
 
 
     def getActiveConnections(self):
-        return [factory.client for factory in self.factories if not factory.client is None]
+        return [factory.client for factory in self.factories
+                if factory.client is not None]
 
 
     def getClient(self, key):
         hosts = self.getActiveConnections()
         log.msg("Using %i active hosts" % len(hosts))
         if len(hosts) == 0:
-            raise NoServerError, "No connected servers remaining."
+            raise NoServerError("No connected servers remaining.")
         return hosts[ketama(key) % len(hosts)]
-    
+
 
     @inlineCallbacks
     def connect(self):
@@ -61,9 +64,9 @@ class YamClient:
                 host = hp
                 port = 11211
             else:
-                raise InvalidHostPortError, "Connection info should be either hostnames or host/port tuples"
+                raise InvalidHostPortError("Connection info should be either hostnames or host/port tuples")
             factory = MemCacheClientFactory()
-            connection = yield reactor.connectTCP(host, port, factory)
+            yield reactor.connectTCP(host, port, factory)
             self.factories.append(factory)
 
         # fire callback when all connections have been established
@@ -76,11 +79,11 @@ class YamClient:
         for factory in self.factories:
             factory.stopTrying()
         for connection in self.getActiveConnections():
-            connection.transport.loseConnection()            
+            connection.transport.loseConnection()
 
 
     def flushAll(self):
-        hosts = self.getActiveConnections()        
+        hosts = self.getActiveConnections()
         log.msg("Flushing %i hosts" % len(hosts))
         return DeferredList([host.flushAll() for host in hosts])
 
@@ -115,7 +118,7 @@ class YamClient:
     def unpickle(self, value, uncompress):
         if uncompress:
             value = zlib.decompress(value)
-        return cPickle.loads(value)            
+        return cPickle.loads(value)
 
 
     def setPickled(self, key, value, **kwargs):
