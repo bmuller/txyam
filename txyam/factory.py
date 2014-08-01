@@ -9,6 +9,11 @@ class ConnectingMemCacheProtocol(MemCacheProtocol):
         self.factory.connectionMade()
 
 
+    def __str__(self):
+        # this method is necessary per hash_ring docs
+        return "memcache[%s]" % str(self.factory.addr)
+
+
 class MemCacheClientFactory(ReconnectingClientFactory):
     initialDelay = 0.1
     protocol = ConnectingMemCacheProtocol
