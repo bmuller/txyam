@@ -5,7 +5,9 @@ from twisted.internet.defer import inlineCallbacks, DeferredList, returnValue
 from twisted.internet import reactor
 from twisted.python import log
 
-from txyam.utils import ketama, deferredDict
+from hash_ring import HashRing
+
+from txyam.utils import deferredDict
 from txyam.factory import MemCacheClientFactory
 
 
@@ -51,7 +53,7 @@ class YamClient:
         log.msg("Using %i active hosts" % len(hosts))
         if len(hosts) == 0:
             raise NoServerError("No connected servers remaining.")
-        return hosts[ketama(key) % len(hosts)]
+        return HashRing(hosts).get_node(key)
 
 
     @inlineCallbacks
@@ -61,12 +63,11 @@ class YamClient:
             if isinstance(hp, tuple):
                 host, port = hp
             elif isinstance(hp, str):
-                host = hp
-                port = 11211
+                host, port = hp, 11211
             else:
                 raise InvalidHostPortError("Connection info should be either hostnames or host/port tuples")
             factory = MemCacheClientFactory()
-            yield reactor.connectTCP(host, port, factory)
+            reactor.connectTCP(host, port, factory)
             self.factories.append(factory)
 
         # fire callback when all connections have been established

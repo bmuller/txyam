@@ -1,23 +1,15 @@
 from twisted.trial import unittest
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.address import IPv4Address
 
-from utils import YamClientWrapper
+from txyam.factory import ConnectingMemCacheProtocol, MemCacheClientFactory
 
 
 class FactoryTest(unittest.TestCase):
 
-    @inlineCallbacks
-    def setUp(self):
-        self.client = YamClientWrapper()
-        yield self.client.setConnection('localhost', 11211)
-
-
-    @inlineCallbacks
-    def test_connection(self):
-        yield self.client.set("testkey", '123')
-        result = yield self.client.get("testkey")
-        self.assertEqual(result[1], '123')
-
-
-    def tearDown(self):
-        return self.client.disconnect()
+    def test_buildProtocol(self):
+        f = MemCacheClientFactory()
+        addy = IPv4Address('TCP', 'ahost', 1234)
+        p = f.buildProtocol(addy, timeOut=123)
+        self.assertIsInstance(p, ConnectingMemCacheProtocol)
+        self.assertEqual(p.persistentTimeOut, 123)
+        self.assertEqual(str(p), "memcache[%s]" % addy)
