@@ -1,4 +1,4 @@
-# txyam: Yet Another Memcached (YAM) client for Twisted
+# txyam: Yet Another Memcache client
 [![Build Status](https://secure.travis-ci.org/bmuller/txyam.png?branch=master)](https://travis-ci.org/bmuller/txyam)
 
 This project is specifically designed for asynchronous [Python Twisted](http://twistedmatrix.com) code to interact with multiple [memcached](http://memcached.org) servers.  A number of other libraries exist, but none of them supported all of the following:
@@ -21,12 +21,14 @@ Usage is pretty straightforward:
 # import the client
 from txyam.client import YamClient
 
-# create a new client - hosts are either hostnames (default port of 11211 will be used) or host/port tuples
+# create a new client - hosts are either hostnames 
+# (default port of 11211 will be used) or host/port tuples
 hosts = [ 'localhost', 'otherhost', ('someotherhost', 123) ]
 client = YamClient(hosts)
 
 # Run some commands.  You can use all of the typical get/add/replace/etc
-# listed at http://twistedmatrix.com/documents/current/api/twisted.protocols.memcache.MemCacheProtocol.html
+# listed at:
+# http://twistedmatrix.com/documents/current/api/twisted.protocols.memcache.MemCacheProtocol.html
 client.set('akey', 'avalue').addCallback(someHandler)
 
 # Additionally, you can set / add / get picked objects
@@ -52,7 +54,7 @@ def mayTakeAWhile(arg, argtwo):
 mayTakeAWhile('blah', 'blah two')
 ```
 
-After the first time 'mayTakeAWhile' is called, the results are stored in memcache.  All future
+After the first time ```mayTakeAWhile``` is called, the results are stored in memcache.  All future
 calls just pull the results from memcache.  The function will be memoized based on the function
 name and arguments.  The function being memoized can return an object, which will be picked before saving.
 
