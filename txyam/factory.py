@@ -25,8 +25,8 @@ class MemCacheClientFactory(ReconnectingClientFactory):
         self.deferred = Deferred()
 
 
-    def buildProtocol(self, addr):
-        self.client = self.protocol()
+    def buildProtocol(self, addr, timeOut=60):
+        self.client = self.protocol(timeOut=timeOut)
         self.addr = addr
         self.client.factory = self
         self.resetDelay()

@@ -7,7 +7,6 @@ This project is specifically designed for asynchronous [Python Twisted](http://t
  1. (Consistent) Partitioning: You should be able to use as many memached servers as you'd like and partition the keys between them, and this should use [consistent hashing](http://en.wikipedia.org/wiki/Consistent_hashing)
  1. Pickling/Compression: You should be able to effortlessly store objects (and have them compressed if you'd like)
 
-
 ## Installation
 
 ```bash
@@ -26,8 +25,7 @@ from txyam.client import YamClient
 hosts = [ 'localhost', 'otherhost', ('someotherhost', 123) ]
 client = YamClient(hosts)
 
-# Run some commands.  You can use all of the typical get/add/replace/etc
-# listed at:
+# Run some commands.  You can use all of the typical get/add/replace/etc listed at:
 # http://twistedmatrix.com/documents/current/api/twisted.protocols.memcache.MemCacheProtocol.html
 client.set('akey', 'avalue').addCallback(someHandler)
 
