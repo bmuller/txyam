@@ -1,8 +1,6 @@
 from twisted.test.proto_helpers import StringTransportWithDisconnection
-from twisted.internet import reactor, protocol
-from twisted.protocols.memcache import MemCacheProtocol
 
-from txyam.factory import ConnectingMemCacheProtocol, MemCacheClientFactory
+from txyam.factory import MemCacheClientFactory
 
 
 def makeTestConnections(client):
@@ -17,4 +15,3 @@ def makeTestConnections(client):
         proto.makeConnection(transport)
         transports.append(transport)
     return transports
-

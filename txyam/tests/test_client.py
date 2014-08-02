@@ -1,23 +1,22 @@
+import cPickle
+import zlib
+
 from twisted.trial import unittest
 from twisted.internet.defer import inlineCallbacks, DeferredList
 from twisted.internet.error import ConnectionDone
 
 from twisted.internet.address import IPv4Address
-from twisted.protocols.memcache import MemCacheProtocol
+from twisted.test.proto_helpers import MemoryReactor
 
 from txyam.tests.utils import makeTestConnections
-from txyam.factory import ConnectingMemCacheProtocol, MemCacheClientFactory
 from txyam.client import YamClient, NoServerError
+import txyam
 
-
-# TODO:
-# use http://twistedmatrix.com/trac/browser/tags/releases/twisted-14.0.0/twisted/test/proto_helpers.py#L375
-# as reactor
-
-from twisted.internet.base import DelayedCall
-DelayedCall.debug = True
 
 class ClientTest(unittest.TestCase):
+    # modeled on typical protocol _test method found in twisted,
+    # see method in MemCacheTestCase class in twisted/test/test_memcache.py
+    # for the source
     def _test(self, d, transports, send, recv, result):
         d.addCallback(self.assertEqual, result)
         for index, transport in enumerate(transports):
@@ -76,7 +75,36 @@ class ClientTest(unittest.TestCase):
         """
         Ensure that we can split by key correctly.
         """
-        raise NotImplementedError
+        yclient = YamClient(['one', 'two'], connect=False)
+        makeTestConnections(yclient)
+        self.assertEqual(yclient.getClient('aaa'), yclient.factories[0].client)
+        self.assertEqual(yclient.getClient('foo'), yclient.factories[1].client)
+
+        # now lose first connection
+        yclient.factories[0].stopTrying()
+        # next line is handled by clientConnectionLost which is called when an actual
+        # internet.tcp.Connector has a failed connection
+        yclient.factories[0].client = None
+        self.assertEqual(yclient.getClient('aaa'), yclient.factories[1].client)
+        self.assertEqual(yclient.getClient('foo'), yclient.factories[1].client)
+
+
+    def test_getClientWithConsistentHashing(self):
+        """
+        Ensure that the client that has a key remains the same if the total number
+        of hosts goes up or down.
+        """
+        yclient = YamClient(map(str, range(9)), connect=False)
+        makeTestConnections(yclient)
+        self.assertEqual(yclient.factories[6].client, yclient.getClient('sdusdfsdf'))
+
+        yclient = YamClient(map(str, range(10)), connect=False)
+        makeTestConnections(yclient)
+        self.assertEqual(yclient.factories[6].client, yclient.getClient('sdusdfsdf'))
+
+        yclient = YamClient(map(str, range(11)), connect=False)
+        makeTestConnections(yclient)
+        self.assertEqual(yclient.factories[6].client, yclient.getClient('sdusdfsdf'))
 
 
     @inlineCallbacks
@@ -123,6 +151,7 @@ class ClientTest(unittest.TestCase):
         transports[0].loseConnection()
 
         done = DeferredList([d1, d2], consumeErrors=True)
+
         def checkFailures(results):
             for success, result in results:
                 self.assertFalse(success)
@@ -141,7 +170,7 @@ class ClientTest(unittest.TestCase):
 
         send = "stats\r\n"
         recv = ["STAT foo bar\r\nSTAT egg spam\r\nEND\r\n", "STAT baz bar\r\nEND\r\n"]
-        results = {'one:123': {"foo": "bar", "egg": "spam"}, 'two:456': { "baz": "bar" }}
+        results = {'one:123': {"foo": "bar", "egg": "spam"}, 'two:456': {"baz": "bar"}}
         yield self._test(client.stats(), transports, send, recv, results)
 
 
@@ -160,17 +189,97 @@ class ClientTest(unittest.TestCase):
         yield self._test(client.version(), transports, send, recv, results)
 
 
-    def test_addPickled(self):
+    @inlineCallbacks
+    def test_setPickled(self):
         """
-        Ensure that pickled object can be stored, both with and without
-        compression.
+        Ensure that pickled object can be stored.
         """
-        raise NotImplementedError
+        client = YamClient(['one', 'two'], connect=False)
+        transports = makeTestConnections(client)
+
+        # Set a value that should hit first client and not second
+        value = cPickle.dumps({'foo': 'bar'}, cPickle.HIGHEST_PROTOCOL)
+        send = "set aaa 0 0 %i\r\n%s\r\n" % (len(value), value)
+        recv = ["STORED\r\n"]
+        yield self._test(client.setPickled("aaa", {'foo': 'bar'}), transports[:1], send, recv, True)
+        self.assertEqual(transports[1].value(), "")
+
+        # Set a value that should hit second client and not first
+        value = cPickle.dumps({'foo': 'bar'}, cPickle.HIGHEST_PROTOCOL)
+        send = "set foo 0 0 %i\r\n%s\r\n" % (len(value), value)
+        recv = ["STORED\r\n"]
+        transports[0].clear()
+        yield self._test(client.setPickled("foo", {'foo': 'bar'}), transports[1:], send, recv, True)
+        self.assertEqual(transports[0].value(), "")
 
 
+    @inlineCallbacks
+    def test_setPickledWithCompression(self):
+        """
+        Ensure that pickled object can be stored with compression.
+        """
+        client = YamClient(['one', 'two'], connect=False)
+        transports = makeTestConnections(client)
+
+        # Set a value that should hit first client and not second, and is gzipped
+        value = zlib.compress(cPickle.dumps({'foo': 'bar'}, cPickle.HIGHEST_PROTOCOL))
+        send = "set aaa 0 0 %i\r\n%s\r\n" % (len(value), value)
+        recv = ["STORED\r\n"]
+        d = client.setPickled("aaa", {'foo': 'bar'}, compress=True)
+        yield self._test(d, transports[:1], send, recv, True)
+        self.assertEqual(transports[1].value(), "")
+
+
+    @inlineCallbacks
     def test_getPickled(self):
         """
-        Ensure that pickled object can be fetched, both with and without
-        compression.
+        Ensure that pickled object can be fetched.
         """
-        raise NotImplementedError
+        client = YamClient(['one', 'two'], connect=False)
+        transports = makeTestConnections(client)
+
+        # Get a value that should hit first client and not second
+        value = {'foo': 'bar', 'biz': 'baz'}
+        pickled = cPickle.dumps(value, cPickle.HIGHEST_PROTOCOL)
+        send = "get aaa\r\n"
+        recv = ["VALUE aaa 0 %i\r\n%s\r\nEND\r\n" % (len(pickled), pickled)]
+        yield self._test(client.getPickled("aaa"), transports[:1], send, recv, (0, value))
+        self.assertEqual(transports[1].value(), "")
+
+
+    @inlineCallbacks
+    def test_getPickledWithCompression(self):
+        """
+        Ensure that pickled object can be fetched with compression.
+        """
+        client = YamClient(['one', 'two'], connect=False)
+        transports = makeTestConnections(client)
+
+        # Get a value that should hit first client and not second
+        value = {'foo': 'bar', 'biz': 'baz'}
+        pickled = zlib.compress(cPickle.dumps(value, cPickle.HIGHEST_PROTOCOL))
+        send = "get aaa\r\n"
+        recv = ["VALUE aaa 0 %i\r\n%s\r\nEND\r\n" % (len(pickled), pickled)]
+        d = client.getPickled("aaa", uncompress=True)
+        yield self._test(d, transports[:1], send, recv, (0, value))
+        self.assertEqual(transports[1].value(), "")
+
+
+    def test_connect(self):
+        txyam.client.reactor = MemoryReactor()
+        YamClient(['one', ('two', 123)])
+        connection = txyam.client.reactor.connectors[0].getDestination()
+        self.assertEqual(connection, IPv4Address('TCP', 'one', 11211))
+        connection = txyam.client.reactor.connectors[1].getDestination()
+        self.assertEqual(connection, IPv4Address('TCP', 'two', 123))
+
+
+    def test_disconnect(self):
+        client = YamClient(['one', 'two'], connect=False)
+        transports = makeTestConnections(client)
+        client.disconnect()
+        for factory in client.factories:
+            self.assertFalse(factory.continueTrying)
+        for transport in transports:
+            self.assertFalse(transport.connected)
+            self.assertTrue(transport.protocol._disconnected)

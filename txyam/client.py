@@ -67,7 +67,7 @@ class YamClient:
             else:
                 raise InvalidHostPortError("Connection info should be either hostnames or host/port tuples")
             factory = MemCacheClientFactory()
-            yield reactor.connectTCP(host, port, factory)
+            reactor.connectTCP(host, port, factory)
             self.factories.append(factory)
 
         # fire callback when all connections have been established
