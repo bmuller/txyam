@@ -1,5 +1,6 @@
 import cPickle
 import zlib
+import uuid
 
 from twisted.trial import unittest
 from twisted.internet.defer import inlineCallbacks, DeferredList
@@ -87,6 +88,19 @@ class ClientTest(unittest.TestCase):
         yclient.factories[0].client = None
         self.assertEqual(yclient.getClient('aaa'), yclient.factories[1].client)
         self.assertEqual(yclient.getClient('foo'), yclient.factories[1].client)
+
+
+    def test_getClientIsDistributed(self):
+        yclient = YamClient(map(str, range(10)), connect=False)
+        makeTestConnections(yclient)
+        counts = {f.client: 0 for f in yclient.factories}
+        for _ in xrange(200):
+            client = yclient.getClient(str(uuid.uuid4()))
+            counts[client] += 1
+
+        # Expect at least 5% of the values are stored on each client
+        for count in counts.values():
+            self.assertTrue(count > 10)
 
 
     def test_getClientWithConsistentHashing(self):
