@@ -154,7 +154,6 @@ class YamClient:
     decrement = wrap("decrement")
     replace = wrap("replace")
     add = wrap("add")
-    set = wrap("set")
     checkAndSet = wrap("checkAndSet")
     append = wrap("append")
     prepend = wrap("prepend")
